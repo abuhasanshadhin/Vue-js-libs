@@ -1,0 +1,9 @@
+{
+    "welcome": "Welcome, :NAME",
+    "goodbye": "Goodbye, :Name",
+    "abc": {
+        "cde": {
+            "efg": "hij"
+        }
+    }
+}
