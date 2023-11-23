@@ -11,12 +11,21 @@ class Validator {
      */
     constructor(data = {}, rules = {}, messages = {}, attributes = {}) {
         this.data = data;
-        this.messages = messages;
         this.rules = this.parseRules(rules);
-        this.attributes = this.getAttributes(attributes);
-        this.validators = this.getValidators();
+        this.attributes = this.prepareAttributes(attributes);
+        this.messages = this.prepareMessages(messages);
+        this.validators = this.prepareValidators();
         this.errors = reactive({});
         this.watchTargets();
+    }
+
+    /**
+     * Count errors.
+     * 
+     * @returns Number
+     */
+    countErrors() {
+        return Object.values(this.errors).flat().length;
     }
 
     /**
@@ -25,8 +34,7 @@ class Validator {
      * @returns Boolean
      */
     passes() {
-        const errors = Object.values(this.errors).flat();
-        return errors.length === 0;
+        return this.countErrors() === 0;
     }
 
     /**
@@ -41,10 +49,11 @@ class Validator {
     /**
      * Get errors bag.
      * 
+     * @param {String|null} key
      * @returns Object
      */
-    getErrors() {
-        return this.errors;
+    getErrors(key = null) {
+        return key ? this.errors[key] : this.errors;
     }
 
     /**
@@ -73,38 +82,35 @@ class Validator {
      * @returns ?String
      */
     firstError(key) {
-        const messages = this.errors[key] || null;
-
-        if (Array.isArray(messages) && messages.length > 0) {
-            return messages.at(0);
-        } else if (typeof messages === 'string') {
-            return messages;
-        }
+        const messages = this.errors[key] || [];
+        return messages[0] || null;
     }
 
     /**
      * Watch targets for execute validation rules.
      */
     watchTargets() {
-        Object.entries(this.rules).forEach(([key, vRule]) => {
+        Object.entries(this.rules).forEach(([key, rule]) => {
             watch(() => this.dataGet(this.data, key), (value) => {
                 if (key in this.errors) delete this.errors[key];
-                const messages = this.validate(key, value, vRule);
+                const messages = this.validate(key, value, rule);
                 if (messages) this.errors[key] = messages;
             });
         });
     }
 
     /**
-     * Execute validator manually.
+     * Execute validation manually.
      */
     execute() {
-        Object.entries(this.rules).forEach(([key, vRule]) => {
+        Object.entries(this.rules).forEach(([key, rule]) => {
             if (key in this.errors) delete this.errors[key];
             const value = this.dataGet(this.data, key);
-            const messages = this.validate(key, value, vRule);
+            const messages = this.validate(key, value, rule);
             if (messages) this.errors[key] = messages;
         });
+
+        return this;
     }
 
     /**
@@ -147,27 +153,27 @@ class Validator {
      * @returns Object
      */
     parseRules(rules) {
-        const vRules = {};
+        const $rules = {};
 
         Object.entries(rules).forEach(([key, value]) => {
             if (typeof value === 'string') {
-                vRules[key] = [];
+                $rules[key] = [];
                 const pipeRules = value.split('|');
                 pipeRules.forEach((name, i) => {
                     if (name.includes(':')) {
                         const [n, args] = name.split(':');
                         const params = args.split(',');
-                        vRules[key][i] = { name: n, params };
+                        $rules[key][i] = { name: n, params };
                     } else {
-                        vRules[key][i] = name;
+                        $rules[key][i] = name;
                     }
                 });
             } else if (Array.isArray(value)) {
-                vRules[key] = value;
+                $rules[key] = value;
             }
         });
 
-        return Object.freeze(vRules);
+        return Object.freeze($rules);
     }
 
     /**
@@ -184,104 +190,148 @@ class Validator {
     }
 
     /**
-     * Get formatted attributes.
+     * Prepare formatted attributes.
      * 
      * @param {Object} attributes 
      * @returns Object
      */
-    getAttributes(attributes) {
-        const attrs = {};
-
+    prepareAttributes(attributes) {
         Object.keys(this.rules).forEach(key => {
-            if (!(key in attributes)) {
-                attrs[key] = String(key)
-                    .split('.')
-                    .at(-1)
-                    .replace(/([_-])|(?=[A-Z])/g, ' ')
-                    .toLowerCase()
-                    .trim();
-            }
+            if (key in attributes) return;
+            attributes[key] = String(key)
+                .split('.')
+                .at(-1)
+                .replace(/([_-])|(?=[A-Z])/g, ' ')
+                .toLowerCase()
+                .trim();
         });
 
-        return attrs;
+        return attributes;
     }
 
     /**
-     * Get validators.
+     * Prepare messages.
+     * 
+     * @param {Object} messages 
+     * @returns Object
+     */
+    prepareMessages(messages) {
+        const defaultMessages = this.getDefaultMessages();
+
+        Object.entries(this.rules).forEach(([key, rules]) => {
+            rules.forEach(rule => {
+                if (typeof rule === 'string') {
+                    const mk = key + '.' + rule;
+
+                    if (mk in messages) {
+                        messages[mk] = this.customMessage(messages[mk]);
+                    } else {
+                        const handler = defaultMessages[rule];
+                        messages[mk] = handler(this.attributes[key]);
+                    }
+                } else if (typeof rule === 'object') {
+                    const mk = key + '.' + rule.name;
+
+                    if (mk in messages) {
+                        messages[mk] = this.customMessage(messages[mk]);
+                    } else {
+                        const attr = this.attributes[key];
+                        const value = this.dataGet(this.data, key);
+                        const obj = defaultMessages[rule.name];
+    
+                        if (typeof value === 'string') {
+                            messages[mk] = obj.string(attr, ...rule.params);
+                        } else if (typeof value === 'number') {
+                            messages[mk] = obj.number(attr, ...rule.params);
+                        } else if (Array.isArray(value)) {
+                            messages[mk] = obj.array(attr, ...rule.params);
+                        }
+                    }
+                }
+            });
+        });
+
+        return messages;
+    }
+
+    /**
+     * Prepare validators.
      * 
      * @returns Object
      */
-    getValidators() {
+    prepareValidators() {
         return Object.freeze({
             required: (key, value) => {
-                if (!value) {
-                    return this.vMsg(key, 'The :attr field is required.', 'required');
-                }
+                if (!value) return this.getMessage(key, 'required');
             },
             email: (key, value) => {
                 const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-                if (!(regex.test(value))) {
-                    return this.vMsg(key, 'The :attr must be a valid email address.', 'email');
-                }
+                if (!(regex.test(value))) return this.getMessage(key, 'email');
             },
             max: (key, value, max) => {
-                if (typeof value === 'number') {
-                    if (value > max) {
-                        return this.vMsg(key, 'The :attr must not be greater than :max.', { max });
-                    }
-                } else if (typeof value === 'string') {
-                    if (value.length > max) {
-                        return this.vMsg(key, 'The :attr must not be greater than :max characters.', { max });
-                    }
-                } else if (Array.isArray(value)) {
-                    if (value.length > max) {
-                        return this.vMsg(key, 'The :attr must not have more than :max items.', { max });
-                    }
-                }
+                const number = typeof value === 'number' && value > max;
+                const string = typeof value === 'string' && value.length > max;
+                const array = Array.isArray(value) && value.length > max;
+                if (number || string || array) return this.getMessage(key, 'max');
             },
             between: (key, value, min, max) => {
-                if (typeof value === 'number') {
-                    if (value < min || value > max) {
-                        return this.vMsg(key, 'The :attr must be between :min and :max.', 'between', { min, max });
-                    }
-                } else if (typeof value === 'string') {
-                    if (value.length < min || value.length > max) {
-                        return this.vMsg(key, 'The :attr must be between :min and :max characters.', 'between', { min, max });
-                    }
-                } else if (Array.isArray(value)) {
-                    if (value.length > length) {
-                        return this.vMsg(key, 'The :attr must have between :min and :max items.', 'between', { min, max });
-                    }
-                }
+                const number = typeof value === 'number' && value < min || value > max;
+                const string = typeof value === 'string' && value.length < min || value.length > max;
+                const array = Array.isArray(value) && value.length < min || value.length > max;
+                if (number || string || array) return this.getMessage(key, 'between');
             },
             numeric: (key, value) => {
-                if (typeof value !== 'number') {
-                    return this.vMsg(key, 'The :attr must be a number.', 'numeric');
-                }
+                if (typeof value !== 'number') return this.getMessage(key, 'numeric');
             },
         });
     }
 
     /**
-     * Get formatted validation message.
+     * Get message from messages.
      * 
      * @param {String} key 
-     * @param {String} message 
      * @param {String} rule 
-     * @param {Object} attrs 
+     * @returns ?String
+     */
+    getMessage(key, rule) {
+        return this.messages[key + '.' + rule] || null;
+    }
+
+    /**
+     * Get default messages.
+     * 
+     * @returns Object
+     */
+    getDefaultMessages() {
+        return Object.freeze({
+            required: (attr) => `The ${attr} field is required.`,
+            email: (attr) => `The ${attr} must be a valid email address.`,
+            max: {
+                number: (attr) => `The ${attr} must be a valid email address.`,
+                string: (attr, max) => `The ${attr} must not be greater than ${max} characters.`,
+                array: (attr, max) => `The ${attr} must not have more than ${max} items.`,
+            },
+            between: {
+                number: (attr, min, max) => `The ${attr} must be between ${min} and ${max}.`,
+                string: (attr, min, max) => `The ${attr} must be between ${min} and ${max} characters.`,
+                array: (attr, min, max) => `The ${attr} must have between ${min} and ${max} items.`,
+            },
+            numeric: (attr) => `The ${attr} must be a number.`,
+        });
+    }
+
+    /**
+     * Get custom message.
+     * 
+     * @param {String} message 
+     * @param {String} attr
+     * @param {Object} params 
      * @returns String
      */
-    vMsg(key, message, rule, attrs = {}) {
-        let msg = this.messages[key + '.' + rule] || message;
-        msg = String(msg).replace(/(:attr)/, this.attributes[key]);
-
-        Object.keys(attrs).forEach(attr => {
-            const regex = new RegExp('(:' + attr + ')');
-            msg = msg.replace(regex, attrs[attr]);
-        });
-
-        return msg;
+    customMessage(message, attr, params = {}) {
+        let $m = String(message).replace(':attr', attr);
+        Object.keys(params).forEach(p => ($m = $m.replace(':' + p, params[p])));
+        return $m;
     }
 }
 
