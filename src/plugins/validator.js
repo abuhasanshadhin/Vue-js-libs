@@ -90,13 +90,13 @@ class Validator {
      * Watch targets for execute validation rules.
      */
     watchTargets() {
-        Object.entries(this.rules).forEach(([key, rule]) => {
-            watch(() => this.dataGet(this.data, key), (value) => {
-                if (key in this.errors) delete this.errors[key];
-                const messages = this.validate(key, value, rule);
-                if (messages) this.errors[key] = messages;
-            });
-        });
+        // Object.entries(this.rules).forEach(([key, rule]) => {
+        //     watch(() => this.dataGet(this.data, key), (value) => {
+        //         if (key in this.errors) delete this.errors[key];
+        //         const messages = this.validate(key, value, rule);
+        //         if (messages.length > 0) this.errors[key] = messages;
+        //     });
+        // });
     }
 
     /**
@@ -107,7 +107,7 @@ class Validator {
             if (key in this.errors) delete this.errors[key];
             const value = this.dataGet(this.data, key);
             const messages = this.validate(key, value, rule);
-            if (messages) this.errors[key] = messages;
+            if (messages.length > 0) this.errors[key] = messages;
         });
 
         return this;
@@ -118,7 +118,7 @@ class Validator {
      * 
      * @param {String} key
      * @param {*} value
-     * @param {Object} rules
+     * @param {Array} rules
      * @returns Array
      */
     validate(key, value, rules) {
@@ -127,9 +127,15 @@ class Validator {
         for (let i = 0; i < rules.length; i++) {
             const rule = rules[i];
 
+            if (rule === 'nullable') {
+                if (this.dataGet(this.data, key)) continue;
+                else break;
+            }
+
             if (typeof rule === 'string') {
                 if (!(rule in this.validators)) return;
                 const validator = this.validators[rule];
+                if (typeof validator !== 'function') return;
                 const message = validator(key, value);
                 messages.push(message);
             } else if (typeof rule === 'function') {
@@ -138,6 +144,7 @@ class Validator {
             } else if (typeof rule === 'object') {
                 if (!(rule.name in this.validators)) return;
                 const validator = this.validators[rule.name];
+                if (typeof validator !== 'function') return;
                 const message = validator(key, value, ...rule.params);
                 messages.push(message);
             }
@@ -222,29 +229,29 @@ class Validator {
             rules.forEach(rule => {
                 if (typeof rule === 'string') {
                     const mk = key + '.' + rule;
-
                     if (mk in messages) {
                         messages[mk] = this.customMessage(messages[mk]);
                     } else {
                         const handler = defaultMessages[rule];
-                        messages[mk] = handler(this.attributes[key]);
+                        if (typeof handler === 'function') {
+                            messages[mk] = handler(this.attributes[key]);
+                        }
                     }
                 } else if (typeof rule === 'object') {
                     const mk = key + '.' + rule.name;
-
                     if (mk in messages) {
                         messages[mk] = this.customMessage(messages[mk]);
                     } else {
                         const attr = this.attributes[key];
                         const value = this.dataGet(this.data, key);
-                        const obj = defaultMessages[rule.name];
-    
-                        if (typeof value === 'string') {
-                            messages[mk] = obj.string(attr, ...rule.params);
-                        } else if (typeof value === 'number') {
-                            messages[mk] = obj.number(attr, ...rule.params);
-                        } else if (Array.isArray(value)) {
-                            messages[mk] = obj.array(attr, ...rule.params);
+                        const handler = defaultMessages[rule.name];
+                        if (typeof handler !== 'object') return;
+                        if (typeof value === 'string' && typeof handler.string === 'function') {
+                            messages[mk] = handler.string(attr, ...rule.params);
+                        } else if (typeof value === 'number' && typeof handler.number === 'function') {
+                            messages[mk] = handler.number(attr, ...rule.params);
+                        } else if (Array.isArray(value) && typeof handler.array === 'function') {
+                            messages[mk] = handler.array(attr, ...rule.params);
                         }
                     }
                 }

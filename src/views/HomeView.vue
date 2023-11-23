@@ -55,7 +55,7 @@ const data = reactive({
 const validator = new Validator(data, {
     name: 'required|between:3,5',
     email: 'required|email',
-    'extra.age': 'required|between:3,5',
+    'extra.age': 'nullable|between:3,5',
 });
 
 const submit = (ev) => {
