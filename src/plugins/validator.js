@@ -90,13 +90,13 @@ class Validator {
      * Watch targets for execute validation rules.
      */
     watchTargets() {
-        // Object.entries(this.rules).forEach(([key, rule]) => {
-        //     watch(() => this.dataGet(this.data, key), (value) => {
-        //         if (key in this.errors) delete this.errors[key];
-        //         const messages = this.validate(key, value, rule);
-        //         if (messages.length > 0) this.errors[key] = messages;
-        //     });
-        // });
+        Object.entries(this.rules).forEach(([key, rule]) => {
+            watch(() => this.dataGet(this.data, key), (value) => {
+                if (key in this.errors) delete this.errors[key];
+                const messages = this.validate(key, value, rule);
+                if (messages.length > 0) this.errors[key] = messages;
+            });
+        });
     }
 
     /**
