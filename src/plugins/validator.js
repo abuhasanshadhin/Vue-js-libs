@@ -282,9 +282,9 @@ class Validator {
                 if (number || string || array) return this.getMessage(key, 'max');
             },
             between: (key, value, min, max) => {
-                const number = typeof value === 'number' && value < min || value > max;
-                const string = typeof value === 'string' && value.length < min || value.length > max;
-                const array = Array.isArray(value) && value.length < min || value.length > max;
+                const number = typeof value === 'number' && (value < min || value > max);
+                const string = typeof value === 'string' && (value.length < min || value.length > max);
+                const array = Array.isArray(value) && (value.length < min || value.length > max);
                 if (number || string || array) return this.getMessage(key, 'between');
             },
             numeric: (key, value) => {
