@@ -15,10 +15,10 @@ const headers = [
 ];
 
 const users = ref([]);
-const _users = [];
+const items = [];
 
-for (let i = 0; i < 1000; i++) {
-    _users.push({
+for (let i = 0; i < 100000; i++) {
+    items.push({
         first_name: faker.person.firstName(),
         last_name: faker.person.lastName(),
         gender: faker.person.sex(),
@@ -30,7 +30,7 @@ for (let i = 0; i < 1000; i++) {
     });
 }
 
-users.value = _users;
+users.value = items;
 </script>
 
 <template>

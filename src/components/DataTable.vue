@@ -1,5 +1,5 @@
 <script setup>
-import { watch, ref, computed } from 'vue';
+import { watch, ref } from 'vue';
 import Pagination from './Pagination.vue';
 
 const props = defineProps({
@@ -13,16 +13,15 @@ const isAscending = ref(false);
 const $items = ref([]);
 const offset = ref(0);
 const limit = ref(0);
+const totalPages = ref(1);
+const showEntries = ref(10);
 
 watch(() => props.items.length, () => {
-    $items.value = props.items.slice(0, props.perPage);
     limit.value = props.perPage;
-}, { immediate: true });
-
-const totalPages = computed(() => {
+    $items.value = props.items.slice(0, props.perPage);
     const total = props.items.length / props.perPage;
-    return Math.ceil(total);
-});
+    totalPages.value = Math.ceil(total);
+}, { immediate: true });
 
 const sortItems = () => {
     const copy = $items.value.slice();
@@ -63,11 +62,34 @@ const handlePageChange = (pageNum) => {
     $items.value = props.items.slice(offset.value, limit.value);
     sortItems();
 };
+
+watch(showEntries, () => {
+    sortItems();
+});
 </script>
 
 <template>
+    <div class="clearfix mb-3">
+        <div class="float-start d-flex justify-content-between">
+            <div class="me-1">Show</div>
+            <select v-model="showEntries"
+                id="showEntries"
+                class="form-select form-select-sm">
+                <option value="10">10</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="500">500</option>
+            </select>
+            <div class="ms-1">entries</div>
+        </div>
+        <div class="float-end d-flex justify-content-between">
+            <div class="me-1">Search:</div>
+            <input type="text"
+                class="form-control form-control-sm">
+        </div>
+    </div>
     <div class="table-responsive">
-        <table class="table table-bordered mb-0">
+        <table class="table table-sm table-striped table-hover table-bordered mb-0">
             <thead>
                 <tr>
                     <th scope="col"
@@ -92,8 +114,8 @@ const handlePageChange = (pageNum) => {
             </thead>
             <tbody>
                 <tr v-for="(item, i) in $items">
-                    <th scope="row"
-                        class="text-center">{{ offset + i + 1 }}</th>
+                    <td scope="row"
+                        class="text-center">{{ offset + i + 1 }}</td>
                     <td v-for="header in headers"
                         class="text-nowrap">
                         {{ typeof header.value === 'function'
@@ -105,8 +127,8 @@ const handlePageChange = (pageNum) => {
             </tbody>
         </table>
     </div>
-    <div class="clearfix mt-2">
-        <div class="float-start">
+    <div class="clearfix mt-3">
+        <div class="float-start small">
             Showing {{ offset }} to {{ limit }} of {{ items.length }} entries
         </div>
         <div class="float-end">
@@ -144,5 +166,4 @@ const handlePageChange = (pageNum) => {
         @include common();
         transform: rotate(180deg);
     }
-}
-</style>
+}</style>

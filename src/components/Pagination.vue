@@ -18,16 +18,16 @@ watch(() => props.initPage, (value) => {
     currentPage.value = value;
 }, { immediate: true });
 
-watch(currentPage, (page) => {
+const createPageItems = () => {
     let min = 0;
     let max = 0;
     let isLeftDots = false;
     let isRightDots = false;
 
-    if (props.totalPages <= 5) {
-        min = 2;
-        max = 4;
-    } else {
+    const tempPages = [];
+    const page = currentPage.value;
+
+    if (props.totalPages > 5) {
         if (page <= 4) {
             min = 2;
             max = 5;
@@ -43,9 +43,10 @@ watch(currentPage, (page) => {
             isLeftDots = true;
             isRightDots = false;
         }
+    } else {
+        min = 1;
+        max = props.totalPages;
     }
-
-    const tempPages = [];
 
     for (let i = min; i <= max; i++) {
         tempPages.push(i);
@@ -54,7 +55,10 @@ watch(currentPage, (page) => {
     pages.value = tempPages;
     showLeftDots.value = isLeftDots;
     showRightDots.value = isRightDots;
-}, { immediate: true });
+}
+
+watch(currentPage, createPageItems, { immediate: true });
+watch(() => props.totalPages, createPageItems, { immediate: true });
 
 const goTo = (page) => {
     if (currentPage.value === page) return;
@@ -76,15 +80,17 @@ const goToNext = () => {
 </script>
 
 <template>
-    <nav aria-label="Page navigation example">
-        <ul class="pagination">
+    <nav v-if="totalPages"
+        aria-label="Page navigation example">
+        <ul class="pagination pagination-sm">
             <li :class="{ disabled: currentPage === 1 }"
                 class="page-item">
                 <button type="button"
                     @click="goToPrev"
                     class="page-link">Previous</button>
             </li>
-            <li :class="{ active: currentPage === 1 }"
+            <li v-if="totalPages > 5"
+                :class="{ active: currentPage === 1 }"
                 class="page-item">
                 <button type="button"
                     @click="goTo(1)"
@@ -107,7 +113,8 @@ const goToNext = () => {
                 <button type="button"
                     class="page-link">...</button>
             </li>
-            <li :class="{ active: currentPage === totalPages }"
+            <li v-if="totalPages > 5"
+                :class="{ active: currentPage === totalPages }"
                 class="page-item">
                 <button type="button"
                     @click="goTo(totalPages)"
