@@ -18,11 +18,14 @@ watch(() => props.initPage, (value) => {
     currentPage.value = value;
 }, { immediate: true });
 
-watch(currentPage, (page) => {
+const createPageItems = () => {
     let min = 0;
     let max = 0;
     let isLeftDots = false;
     let isRightDots = false;
+
+    const tempPages = [];
+    const page = currentPage.value;
 
     if (props.totalPages > 5) {
         if (page <= 4) {
@@ -45,8 +48,6 @@ watch(currentPage, (page) => {
         max = props.totalPages;
     }
 
-    const tempPages = [];
-
     for (let i = min; i <= max; i++) {
         tempPages.push(i);
     }
@@ -54,7 +55,10 @@ watch(currentPage, (page) => {
     pages.value = tempPages;
     showLeftDots.value = isLeftDots;
     showRightDots.value = isRightDots;
-}, { immediate: true });
+}
+
+watch(currentPage, createPageItems, { immediate: true });
+watch(() => props.totalPages, createPageItems, { immediate: true });
 
 const goTo = (page) => {
     if (currentPage.value === page) return;
@@ -76,8 +80,9 @@ const goToNext = () => {
 </script>
 
 <template>
-    <nav v-if="totalPages" aria-label="Page navigation example">
-        <ul class="pagination">
+    <nav v-if="totalPages"
+        aria-label="Page navigation example">
+        <ul class="pagination pagination-sm">
             <li :class="{ disabled: currentPage === 1 }"
                 class="page-item">
                 <button type="button"
