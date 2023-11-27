@@ -48,12 +48,16 @@ const submit = (ev) => {
         console.log('validation failed');
     }
 }
+
+const handlePageChange = (page) => {
+    console.log(page);
+}
 </script>
 
 <template>
     <main class="m-3">
         <div class="container">
-            <Pagination />
+            <Pagination @page="handlePageChange" :init-page="6" :total-pages="15" />
 
             <DataTable :headers="headers"
                 :items="users"></DataTable>
