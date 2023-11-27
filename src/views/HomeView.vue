@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue';
 import Validator from '../plugins/validator';
 import DataTable from '../components/DataTable.vue';
 import { faker } from '@faker-js/faker';
+import Pagination from '../components/Pagination.vue';
 
 const headers = [
     { name: 'First Name', value: 'first_name' },
@@ -14,14 +15,14 @@ const headers = [
 const users = ref([]);
 const _users = [];
 
-for (let i = 0; i < 1000; i++) {
-    _users.push({
-        first_name: faker.person.firstName(),
-        last_name: faker.person.lastName(),
-        gender: faker.person.sex(),
-        age: faker.number.int(75),
-    });
-}
+// for (let i = 0; i < 1000; i++) {
+//     _users.push({
+//         first_name: faker.person.firstName(),
+//         last_name: faker.person.lastName(),
+//         gender: faker.person.sex(),
+//         age: faker.number.int(75),
+//     });
+// }
 
 users.value = _users;
 
@@ -52,6 +53,8 @@ const submit = (ev) => {
 <template>
     <main class="m-3">
         <div class="container">
+            <Pagination />
+
             <DataTable :headers="headers"
                 :items="users"></DataTable>
 
