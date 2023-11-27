@@ -24,10 +24,7 @@ watch(currentPage, (page) => {
     let isLeftDots = false;
     let isRightDots = false;
 
-    if (props.totalPages <= 5) {
-        min = 2;
-        max = 4;
-    } else {
+    if (props.totalPages > 5) {
         if (page <= 4) {
             min = 2;
             max = 5;
@@ -43,6 +40,9 @@ watch(currentPage, (page) => {
             isLeftDots = true;
             isRightDots = false;
         }
+    } else {
+        min = 1;
+        max = props.totalPages;
     }
 
     const tempPages = [];
@@ -76,7 +76,7 @@ const goToNext = () => {
 </script>
 
 <template>
-    <nav aria-label="Page navigation example">
+    <nav v-if="totalPages" aria-label="Page navigation example">
         <ul class="pagination">
             <li :class="{ disabled: currentPage === 1 }"
                 class="page-item">
@@ -84,7 +84,8 @@ const goToNext = () => {
                     @click="goToPrev"
                     class="page-link">Previous</button>
             </li>
-            <li :class="{ active: currentPage === 1 }"
+            <li v-if="totalPages > 5"
+                :class="{ active: currentPage === 1 }"
                 class="page-item">
                 <button type="button"
                     @click="goTo(1)"
@@ -107,7 +108,8 @@ const goToNext = () => {
                 <button type="button"
                     class="page-link">...</button>
             </li>
-            <li :class="{ active: currentPage === totalPages }"
+            <li v-if="totalPages > 5"
+                :class="{ active: currentPage === totalPages }"
                 class="page-item">
                 <button type="button"
                     @click="goTo(totalPages)"
