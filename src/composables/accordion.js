@@ -20,6 +20,8 @@ export function useAccordion(ref, { current = null }) {
             const targetEl = ref.value.querySelector(`[data-accordion-item="${target}"]`);
             targetEl.classList.toggle('show');
 
+            const cbParams = { index: null, toggle: null, target: null };
+
             if (targetEl.classList.contains('show')) {
                 targetEl.style.height = `${targetEl.scrollHeight}px`;
                 const showedItems = ref.value.querySelectorAll(
@@ -31,12 +33,13 @@ export function useAccordion(ref, { current = null }) {
                     item.classList.remove('show');
                 });
 
-                if (typeof current === 'function') {
-                    current({ index, toggle, target: targetEl });
-                }
+                cbParams = { index, toggle, target: targetEl };
             } else {
                 targetEl.style.height = '0';
-                current({ index: null, toggle: null, target: null });
+            }
+
+            if (typeof current === 'function') {
+                current(cbParams);
             }
         });
     });
