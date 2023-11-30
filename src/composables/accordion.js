@@ -16,11 +16,13 @@ export function useAccordion(ref, { current = null }) {
 
     [...toggles].forEach((toggle, index) => {
         toggle.addEventListener('click', (ev) => {
-            const target = ev.target.dataset.accordionTarget;
+            if (!ev.currentTarget?.hasAttribute('data-accordion-target')) return;
+            
+            const target = ev.currentTarget.dataset.accordionTarget;
             const targetEl = ref.value.querySelector(`[data-accordion-item="${target}"]`);
             targetEl.classList.toggle('show');
 
-            const cbParams = { index: null, toggle: null, target: null };
+            const data = { index: null, target: targetEl, toggle };
 
             if (targetEl.classList.contains('show')) {
                 targetEl.style.height = `${targetEl.scrollHeight}px`;
@@ -33,13 +35,13 @@ export function useAccordion(ref, { current = null }) {
                     item.classList.remove('show');
                 });
 
-                cbParams = { index, toggle, target: targetEl };
+                data.index = index;
             } else {
                 targetEl.style.height = '0';
             }
 
             if (typeof current === 'function') {
-                current(cbParams);
+                current(data);
             }
         });
     });
