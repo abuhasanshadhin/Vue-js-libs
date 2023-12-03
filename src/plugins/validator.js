@@ -83,7 +83,7 @@ class Validator {
      */
     firstError(key) {
         const messages = this.errors[key] || [];
-        return messages[0] || null;
+        return messages[0] || '';
     }
 
     /**
@@ -228,30 +228,30 @@ class Validator {
         Object.entries(this.rules).forEach(([key, rules]) => {
             rules.forEach(rule => {
                 if (typeof rule === 'string') {
-                    const mk = key + '.' + rule;
-                    if (mk in messages) {
-                        messages[mk] = this.customMessage(messages[mk]);
+                    const msgKey = key + '.' + rule;
+                    if (msgKey in messages) {
+                        messages[msgKey] = this.customMessage(messages[msgKey]);
                     } else {
                         const handler = defaultMessages[rule];
                         if (typeof handler === 'function') {
-                            messages[mk] = handler(this.attributes[key]);
+                            messages[msgKey] = handler(this.attributes[key]);
                         }
                     }
                 } else if (typeof rule === 'object') {
-                    const mk = key + '.' + rule.name;
-                    if (mk in messages) {
-                        messages[mk] = this.customMessage(messages[mk]);
+                    const msgKey = key + '.' + rule.name;
+                    if (msgKey in messages) {
+                        messages[msgKey] = this.customMessage(messages[msgKey]);
                     } else {
                         const attr = this.attributes[key];
                         const value = this.dataGet(this.data, key);
                         const handler = defaultMessages[rule.name];
                         if (typeof handler !== 'object') return;
                         if (typeof value === 'string' && typeof handler.string === 'function') {
-                            messages[mk] = handler.string(attr, ...rule.params);
+                            messages[msgKey] = handler.string(attr, ...rule.params);
                         } else if (typeof value === 'number' && typeof handler.number === 'function') {
-                            messages[mk] = handler.number(attr, ...rule.params);
+                            messages[msgKey] = handler.number(attr, ...rule.params);
                         } else if (Array.isArray(value) && typeof handler.array === 'function') {
-                            messages[mk] = handler.array(attr, ...rule.params);
+                            messages[msgKey] = handler.array(attr, ...rule.params);
                         }
                     }
                 }
@@ -301,7 +301,7 @@ class Validator {
      * @returns ?String
      */
     getMessage(key, rule) {
-        return this.messages[key + '.' + rule] || null;
+        return this.messages[key + '.' + rule] || '';
     }
 
     /**
@@ -336,9 +336,13 @@ class Validator {
      * @returns String
      */
     customMessage(message, attr, params = {}) {
-        let $m = String(message).replace(':attr', attr);
-        Object.keys(params).forEach(p => ($m = $m.replace(':' + p, params[p])));
-        return $m;
+        let $message = String(message).replace(':attr', attr);
+        
+        Object.keys(params).forEach(p => {
+            $message = $message.replace(':' + p, params[p]);
+        });
+
+        return $message;
     }
 }
 
