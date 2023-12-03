@@ -94,7 +94,7 @@ class Validator {
             watch(() => this.dataGet(this.data, key), (value) => {
                 if (key in this.errors) delete this.errors[key];
                 const messages = this.validate(key, value, rule);
-                if (messages.length > 0) this.errors[key] = messages;
+                if (messages.length) this.errors[key] = messages;
             });
         });
     }
@@ -107,7 +107,7 @@ class Validator {
             if (key in this.errors) delete this.errors[key];
             const value = this.dataGet(this.data, key);
             const messages = this.validate(key, value, rule);
-            if (messages.length > 0) this.errors[key] = messages;
+            if (messages.length) this.errors[key] = messages;
         });
 
         return this;
@@ -337,7 +337,7 @@ class Validator {
      */
     customMessage(message, attr, params = {}) {
         let $message = String(message).replace(':attr', attr);
-        
+
         Object.keys(params).forEach(p => {
             $message = $message.replace(':' + p, params[p]);
         });
