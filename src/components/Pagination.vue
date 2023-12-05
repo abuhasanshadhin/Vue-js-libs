@@ -2,21 +2,15 @@
 import { ref, watch } from 'vue';
 
 const props = defineProps({
-    initPage: { type: Number, default: 1 },
+    modelValue: { type: Number, default: 1 },
     totalPages: { type: Number, default: 1 },
 });
 
-const emit = defineEmits(['page']);
+const emit = defineEmits(['update:modelValue', 'page']);
 
-const currentPage = ref(1);
 const pages = ref([]);
-
 const showLeftDots = ref(false);
 const showRightDots = ref(false);
-
-watch(() => props.initPage, (value) => {
-    currentPage.value = value;
-}, { immediate: true });
 
 const createPageItems = () => {
     let min = 0;
@@ -25,16 +19,15 @@ const createPageItems = () => {
     let isRightDots = false;
 
     const tempPages = [];
-    const page = currentPage.value;
 
     if (props.totalPages > 5) {
-        if (page <= 4) {
+        if (props.modelValue <= 4) {
             min = 2;
             max = 5;
             isRightDots = true;
-        } else if (page > 4 && page < (props.totalPages - 3)) {
-            min = currentPage.value - 1;
-            max = currentPage.value + 1;
+        } else if (props.modelValue > 4 && props.modelValue < (props.totalPages - 3)) {
+            min = props.modelValue - 1;
+            max = props.modelValue + 1;
             isLeftDots = true;
             isRightDots = true;
         } else {
@@ -57,24 +50,24 @@ const createPageItems = () => {
     showRightDots.value = isRightDots;
 }
 
-watch(currentPage, createPageItems, { immediate: true });
+watch(() => props.modelValue, createPageItems, { immediate: true });
 watch(() => props.totalPages, createPageItems, { immediate: true });
 
 const goTo = (page) => {
-    if (currentPage.value === page) return;
-    currentPage.value = page;
+    if (props.modelValue === page) return;
+    emit('update:modelValue', page);
     emit('page', page);
 }
 
 const goToPrev = () => {
-    if (currentPage.value > 1) {
-        goTo(currentPage.value - 1);
+    if (props.modelValue > 1) {
+        goTo(props.modelValue - 1);
     }
 }
 
 const goToNext = () => {
-    if (currentPage.value < props.totalPages) {
-        goTo(currentPage.value + 1);
+    if (props.modelValue < props.totalPages) {
+        goTo(props.modelValue + 1);
     }
 }
 </script>
@@ -83,14 +76,14 @@ const goToNext = () => {
     <nav v-if="totalPages"
         aria-label="Page navigation example">
         <ul class="pagination pagination-sm">
-            <li :class="{ disabled: currentPage === 1 }"
+            <li :class="{ disabled: modelValue === 1 }"
                 class="page-item">
                 <button type="button"
                     @click="goToPrev"
                     class="page-link">Previous</button>
             </li>
             <li v-if="totalPages > 5"
-                :class="{ active: currentPage === 1 }"
+                :class="{ active: modelValue === 1 }"
                 class="page-item">
                 <button type="button"
                     @click="goTo(1)"
@@ -102,7 +95,7 @@ const goToNext = () => {
                     class="page-link">...</button>
             </li>
             <li v-for="page in pages"
-                :class="{ 'active': page == currentPage }"
+                :class="{ 'active': page == modelValue }"
                 class="page-item">
                 <button type="button"
                     @click="goTo(page)"
@@ -114,13 +107,13 @@ const goToNext = () => {
                     class="page-link">...</button>
             </li>
             <li v-if="totalPages > 5"
-                :class="{ active: currentPage === totalPages }"
+                :class="{ active: modelValue === totalPages }"
                 class="page-item">
                 <button type="button"
                     @click="goTo(totalPages)"
                     class="page-link">{{ totalPages }}</button>
             </li>
-            <li :class="{ disabled: currentPage === totalPages }"
+            <li :class="{ disabled: modelValue === totalPages }"
                 class="page-item">
                 <button type="button"
                     @click="goToNext"
