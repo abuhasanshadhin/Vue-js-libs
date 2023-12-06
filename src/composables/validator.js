@@ -5,7 +5,7 @@ class Validator {
      * Constructor.
      * 
      * @param {Object} data Target data for validation.
-     * @param {Object} rules Validation Rules for each property.
+     * @param {Object} rules Validation rules for each property.
      * @param {Object} messages Custom validation messages.
      * @param {Object} attributes Custom attributes names.
      */
@@ -229,12 +229,15 @@ class Validator {
             rules.forEach(rule => {
                 const ruleName = typeof rule === 'object' ? rule.name : rule;
                 const msgKey = key + '.' + ruleName;
+
                 if (msgKey in messages) {
                     messages[msgKey] = this.customMessage(messages[msgKey]);
                 } else {
                     const handler = defaultMessages[ruleName];
+                    
                     if (typeof handler === 'function') {
-                        messages[msgKey] = handler(this.attributes[key]);
+                        const params = typeof rule === 'object' ? rule.params : [];
+                        messages[msgKey] = handler(this.attributes[key], ...params);
                     }
                 }
             });
@@ -318,6 +321,18 @@ class Validator {
 
         return $message;
     }
+}
+
+/**
+ * Constructor.
+ * 
+ * @param {Object} data Target data for validation.
+ * @param {Object} rules Validation rules for each property.
+ * @param {Object} messages Custom validation messages.
+ * @param {Object} attributes Custom attributes names.
+ */
+export function useValidator(data = {}, rules = {}, messages = {}, attributes = {}) {
+    return new Validator(data, rules, messages, attributes);
 }
 
 export default Validator;
