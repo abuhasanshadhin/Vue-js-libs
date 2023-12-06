@@ -227,32 +227,14 @@ class Validator {
 
         Object.entries(this.rules).forEach(([key, rules]) => {
             rules.forEach(rule => {
-                if (typeof rule === 'string') {
-                    const msgKey = key + '.' + rule;
-                    if (msgKey in messages) {
-                        messages[msgKey] = this.customMessage(messages[msgKey]);
-                    } else {
-                        const handler = defaultMessages[rule];
-                        if (typeof handler === 'function') {
-                            messages[msgKey] = handler(this.attributes[key]);
-                        }
-                    }
-                } else if (typeof rule === 'object') {
-                    const msgKey = key + '.' + rule.name;
-                    if (msgKey in messages) {
-                        messages[msgKey] = this.customMessage(messages[msgKey]);
-                    } else {
-                        const attr = this.attributes[key];
-                        const value = this.dataGet(this.data, key);
-                        const handler = defaultMessages[rule.name];
-                        if (typeof handler !== 'object') return;
-                        if (typeof value === 'string' && typeof handler.string === 'function') {
-                            messages[msgKey] = handler.string(attr, ...rule.params);
-                        } else if (typeof value === 'number' && typeof handler.number === 'function') {
-                            messages[msgKey] = handler.number(attr, ...rule.params);
-                        } else if (Array.isArray(value) && typeof handler.array === 'function') {
-                            messages[msgKey] = handler.array(attr, ...rule.params);
-                        }
+                const ruleName = typeof rule === 'object' ? rule.name : rule;
+                const msgKey = key + '.' + ruleName;
+                if (msgKey in messages) {
+                    messages[msgKey] = this.customMessage(messages[msgKey]);
+                } else {
+                    const handler = defaultMessages[ruleName];
+                    if (typeof handler === 'function') {
+                        messages[msgKey] = handler(this.attributes[key]);
                     }
                 }
             });
@@ -313,16 +295,8 @@ class Validator {
         return Object.freeze({
             required: (attr) => `The ${attr} field is required.`,
             email: (attr) => `The ${attr} must be a valid email address.`,
-            max: {
-                number: (attr) => `The ${attr} must be a valid email address.`,
-                string: (attr, max) => `The ${attr} must not be greater than ${max} characters.`,
-                array: (attr, max) => `The ${attr} must not have more than ${max} items.`,
-            },
-            between: {
-                number: (attr, min, max) => `The ${attr} must be between ${min} and ${max}.`,
-                string: (attr, min, max) => `The ${attr} must be between ${min} and ${max} characters.`,
-                array: (attr, min, max) => `The ${attr} must have between ${min} and ${max} items.`,
-            },
+            max: (attr, max) => `The ${attr} must not be greater than ${max}.`,
+            between: (attr, min, max) => `The ${attr} must be between ${min} and ${max}.`,
             numeric: (attr) => `The ${attr} must be a number.`,
         });
     }
