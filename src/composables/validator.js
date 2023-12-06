@@ -234,7 +234,7 @@ class Validator {
                     messages[msgKey] = this.customMessage(messages[msgKey]);
                 } else {
                     const handler = defaultMessages[ruleName];
-                    
+
                     if (typeof handler === 'function') {
                         const params = typeof rule === 'object' ? rule.params : [];
                         messages[msgKey] = handler(this.attributes[key], ...params);
@@ -260,6 +260,12 @@ class Validator {
                 const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!(regex.test(value))) return this.getMessage(key, 'email');
             },
+            min: (key, value, min) => {
+                const number = typeof value === 'number' && value < min;
+                const string = typeof value === 'string' && value.length < min;
+                const array = Array.isArray(value) && value.length < min;
+                if (number || string || array) return this.getMessage(key, 'min');
+            },
             max: (key, value, max) => {
                 const number = typeof value === 'number' && value > max;
                 const string = typeof value === 'string' && value.length > max;
@@ -274,6 +280,20 @@ class Validator {
             },
             numeric: (key, value) => {
                 if (typeof value !== 'number') return this.getMessage(key, 'numeric');
+            },
+            digits: (key, value) => {
+                let checkDigit = String(value).split('').every((e) => !isNaN(e));
+                if (!checkDigit) return this.getMessage(key, 'digits')
+            },
+            bn_mobile: (key, value) => {
+                const pre = ["013", "014", "015", "016", "017", "018", "019"];
+                const prefix = value.substring(0, 3);
+                if (!pre.includes(prefix)) return this.getMessage(key, 'bn_mobile')
+            },
+            start_with: (key, value, ...params) => {
+                if (Object.keys(params).length == 0) return '';
+                const prefix = value.substring(0, 3);
+                if (!params.includes(prefix)) return this.getMessage(key, 'start_with')
             },
         });
     }
@@ -301,6 +321,9 @@ class Validator {
             max: (attr, max) => `The ${attr} must not be greater than ${max}.`,
             between: (attr, min, max) => `The ${attr} must be between ${min} and ${max}.`,
             numeric: (attr) => `The ${attr} must be a number.`,
+            digits: (attr) => `The ${attr} must be digits.`,
+            bn_mobile: (attr) => `The ${attr} must be start with 013, 014, 015, 016, 017, 018, 019.`,
+            start_with: (attr, ...prefix) => `The ${attr} must start with one of the following: ${prefix.join(', ')}`,
         });
     }
 
